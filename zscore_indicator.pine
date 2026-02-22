@@ -1,0 +1,40 @@
+//@version=5
+indicator("Z-Score Oscillator", shorttitle="Z-Score", timeframe="", timeframe_gaps=true)
+
+// Input Parameters
+lookback_period = input.int(20, "Lookback Period", minval=5, maxval=100, group="Z-Score Settings")
+entry_threshold = input.float(2.0, "Entry Threshold", minval=1.0, maxval=4.0, step=0.1, group="Z-Score Settings")
+exit_threshold = input.float(0.5, "Exit Threshold", minval=0.1, maxval=2.0, step=0.1, group="Z-Score Settings")
+price_source = input.source(close, "Price Source", group="Z-Score Settings")
+
+// Color Settings
+overbought_color = input.color(color.red, "Overbought Color", group="Visual Settings")
+oversold_color = input.color(color.green, "Oversold Color", group="Visual Settings")
+neutral_color = input.color(color.blue, "Neutral Color", group="Visual Settings")
+
+// Z-Score Calculation
+rolling_mean = ta.sma(price_source, lookback_period)
+rolling_std = ta.stdev(price_source, lookback_period)
+zscore = (price_source - rolling_mean) / rolling_std
+
+// Color Logic
+zscore_color = zscore > entry_threshold ? overbought_color : zscore < -entry_threshold ? oversold_color : neutral_color
+
+// Plot Z-Score
+plot(zscore, title="Z-Score", color=zscore_color, linewidth=2)
+
+// Reference Lines
+hline(entry_threshold, "Overbought", color=color.new(color.red, 50), linestyle=hline.style_dashed, linewidth=1)
+hline(-entry_threshold, "Oversold", color=color.new(color.green, 50), linestyle=hline.style_dashed, linewidth=1)
+hline(exit_threshold, "Upper Exit", color=color.new(color.gray, 70), linestyle=hline.style_dotted)
+hline(-exit_threshold, "Lower Exit", color=color.new(color.gray, 70), linestyle=hline.style_dotted)
+hline(0, "Zero Line", color=color.new(color.white, 30), linestyle=hline.style_solid)
+
+// Background Coloring for Extreme Zones
+bgcolor(zscore > entry_threshold ? color.new(color.red, 95) : na, title="Overbought Zone")
+bgcolor(zscore < -entry_threshold ? color.new(color.green, 95) : na, title="Oversold Zone")
+
+// Alerts
+alertcondition(ta.crossover(zscore, entry_threshold), title="Overbought Alert", message="Z-Score crossed above {{plot_0}}")
+alertcondition(ta.crossunder(zscore, -entry_threshold), title="Oversold Alert", message="Z-Score crossed below {{plot_0}}")
+alertcondition(ta.cross(zscore, 0), title="Zero Cross Alert", message="Z-Score crossed zero line")

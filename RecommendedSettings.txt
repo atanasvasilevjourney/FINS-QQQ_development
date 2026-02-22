@@ -1,0 +1,157 @@
+# Range Breakout EA - Recommended Settings
+
+## Major Forex Pairs (EUR/USD, GBP/USD, USD/JPY, etc.)
+
+### Conservative Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM  
+- Trading End: 6:00 PM
+- Risk Amount: $25-50
+- Max Trades Per Day: 1
+- Min Range Size: 0.0001
+- Show Visualization: True
+
+### Aggressive Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $100-200
+- Max Trades Per Day: 2
+- Min Range Size: 0.0001
+- Show Visualization: True
+
+## Indices (US30, NAS100, SPX500, etc.)
+
+### Conservative Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $50-100
+- Max Trades Per Day: 1
+- Min Range Size: 1.0
+- Show Visualization: True
+
+### Aggressive Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $200-500
+- Max Trades Per Day: 2
+- Min Range Size: 1.0
+- Show Visualization: True
+
+## Commodities (Gold, Silver, Oil, etc.)
+
+### Conservative Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $50-100
+- Max Trades Per Day: 1
+- Min Range Size: 0.1
+- Show Visualization: True
+
+### Aggressive Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $100-300
+- Max Trades Per Day: 2
+- Min Range Size: 0.1
+- Show Visualization: True
+
+## Crypto Pairs (BTC/USD, ETH/USD, etc.)
+
+### Conservative Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $25-50
+- Max Trades Per Day: 1
+- Min Range Size: 10.0
+- Show Visualization: True
+
+### Aggressive Settings
+- Range Start: 3:00 AM
+- Range End: 6:00 AM
+- Trading End: 6:00 PM
+- Risk Amount: $100-200
+- Max Trades Per Day: 2
+- Min Range Size: 10.0
+- Show Visualization: True
+
+## Asian Session Settings (For Asian Markets)
+
+### Tokyo Session
+- Range Start: 0:00 AM (Tokyo time)
+- Range End: 3:00 AM (Tokyo time)
+- Trading End: 6:00 PM (Tokyo time)
+- Risk Amount: $50-100
+- Max Trades Per Day: 1
+- Min Range Size: 0.0001
+- Show Visualization: True
+
+## European Session Settings
+
+### London Session
+- Range Start: 6:00 AM (London time)
+- Range End: 9:00 AM (London time)
+- Trading End: 6:00 PM (London time)
+- Risk Amount: $50-100
+- Max Trades Per Day: 1
+- Min Range Size: 0.0001
+- Show Visualization: True
+
+## US Session Settings
+
+### New York Session
+- Range Start: 8:00 AM (New York time)
+- Range End: 11:00 AM (New York time)
+- Trading End: 6:00 PM (New York time)
+- Risk Amount: $50-100
+- Max Trades Per Day: 1
+- Min Range Size: 0.0001
+- Show Visualization: True
+
+## Notes
+
+1. **Time Zones**: All times are in broker server time. Adjust according to your broker's server time.
+
+2. **Risk Management**: 
+   - Start with conservative settings
+   - Never risk more than 2% of account balance per trade
+   - Adjust risk amount based on account size
+
+3. **Range Size**: 
+   - Too small: May result in false breakouts
+   - Too large: May result in very small position sizes
+   - Adjust based on instrument volatility
+
+4. **Testing**: 
+   - Always backtest before live trading
+   - Test on demo account first
+   - Monitor performance over several weeks
+
+5. **Market Conditions**:
+   - Works best in trending markets
+   - Avoid during major news events
+   - Consider market holidays and low liquidity periods
+
+## Quick Setup Guide
+
+1. **Choose Your Instrument**: Select from the categories above
+2. **Select Settings**: Start with conservative settings
+3. **Adjust Risk**: Set risk amount based on your account size
+4. **Test**: Run on demo account for at least 1 week
+5. **Optimize**: Adjust settings based on performance
+6. **Go Live**: Start with small risk amounts
+
+## Performance Expectations
+
+- **Win Rate**: Typically 40-60%
+- **Risk/Reward**: Usually 1:1 to 1:3
+- **Best Markets**: Trending markets with clear breakouts
+- **Worst Markets**: Sideways, choppy markets
+- **Timeframe**: Works best on M1, M5, M15 charts
+
+Remember: Past performance does not guarantee future results. Always trade responsibly and within your risk tolerance.

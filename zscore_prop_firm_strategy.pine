@@ -1,0 +1,205 @@
+//@version=5
+strategy("Z-Score Prop Firm Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100, 
+         initial_capital=100000, currency=currency.USD, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// PROP FIRM CHALLENGE CONFIGURATION
+// ============================================================================
+// Challenge Parameters (adjust based on your prop firm)
+challenge_profit_target = input.float(8.0, "Challenge Profit Target %", minval=1.0, maxval=20.0, step=0.1, group="Prop Firm Settings")
+max_daily_drawdown = input.float(4.0, "Max Daily Drawdown %", minval=1.0, maxval=10.0, step=0.1, group="Prop Firm Settings")
+max_total_drawdown = input.float(8.0, "Max Total Drawdown %", minval=1.0, maxval=15.0, step=0.1, group="Prop Firm Settings")
+challenge_days = input.int(30, "Challenge Days", minval=10, maxval=90, group="Prop Firm Settings")
+
+// ============================================================================
+// Z-SCORE SETTINGS
+// ============================================================================
+lookback_period = input.int(20, "Lookback Period", minval=5, maxval=100, group="Z-Score Settings")
+entry_threshold = input.float(2.0, "Entry Threshold", minval=1.0, maxval=4.0, step=0.1, group="Z-Score Settings")
+exit_threshold = input.float(0.5, "Exit Threshold", minval=0.1, maxval=2.0, step=0.1, group="Z-Score Settings")
+price_source = input.source(close, "Price Source", group="Z-Score Settings")
+
+// ============================================================================
+// RISK MANAGEMENT
+// ============================================================================
+stop_loss_pct = input.float(2.0, "Stop Loss %", minval=0.5, maxval=5.0, step=0.1, group="Risk Management")
+take_profit_pct = input.float(4.0, "Take Profit %", minval=1.0, maxval=10.0, step=0.1, group="Risk Management")
+max_positions = input.int(1, "Max Positions", minval=1, maxval=3, group="Risk Management")
+position_size_pct = input.float(1.0, "Position Size % of Equity", minval=0.1, maxval=5.0, step=0.1, group="Risk Management")
+
+// ============================================================================
+// MARKET FILTERS
+// ============================================================================
+use_news_filter = input.bool(true, "Avoid High Impact News", group="Market Filters")
+use_volatility_filter = input.bool(true, "Use Volatility Filter", group="Market Filters")
+min_atr = input.float(0.0001, "Minimum ATR", minval=0.00001, maxval=0.01, step=0.00001, group="Market Filters")
+max_atr = input.float(0.01, "Maximum ATR", minval=0.0001, maxval=0.1, step=0.0001, group="Market Filters")
+
+// ============================================================================
+// TIME FILTERS
+// ============================================================================
+use_time_filter = input.bool(true, "Use Trading Hours Filter", group="Time Filters")
+start_hour = input.int(8, "Start Hour (UTC)", minval=0, maxval=23, group="Time Filters")
+end_hour = input.int(18, "End Hour (UTC)", minval=0, maxval=23, group="Time Filters")
+avoid_friday = input.bool(true, "Avoid Friday Trades", group="Time Filters")
+
+// ============================================================================
+// CALCULATIONS
+// ============================================================================
+
+// Z-Score Calculation
+rolling_mean = ta.sma(price_source, lookback_period)
+rolling_std = ta.stdev(price_source, lookback_period)
+zscore = (price_source - rolling_mean) / rolling_std
+
+// ATR for volatility filter
+atr_value = ta.atr(14)
+
+// Time filters
+current_hour = hour(time, "UTC")
+is_trading_hours = not use_time_filter or (current_hour >= start_hour and current_hour <= end_hour)
+is_friday = dayofweek == dayofweek.friday
+avoid_friday_trade = not avoid_friday or not is_friday
+
+// Volatility filter
+volatility_ok = not use_volatility_filter or (atr_value >= min_atr and atr_value <= max_atr)
+
+// ============================================================================
+// DRAWDOWN MONITORING
+// ============================================================================
+// Track daily and total drawdown
+var float daily_high = na
+var float total_high = na
+var float daily_drawdown = 0.0
+var float total_drawdown = 0.0
+
+// Update daily high
+if barstate.isconfirmed
+    if na(daily_high) or dayofmonth != dayofmonth[1]
+        daily_high := strategy.equity
+    else
+        daily_high := math.max(daily_high, strategy.equity)
+
+// Update total high
+if na(total_high)
+    total_high := strategy.equity
+else
+    total_high := math.max(total_high, strategy.equity)
+
+// Calculate drawdowns
+daily_drawdown := (daily_high - strategy.equity) / daily_high * 100
+total_drawdown := (total_high - strategy.equity) / total_high * 100
+
+// Calculate profit percentage
+profit_pct = (strategy.equity - strategy.initial_capital) / strategy.initial_capital * 100
+
+// ============================================================================
+// ENTRY CONDITIONS
+// ============================================================================
+// Enhanced entry conditions with multiple filters
+long_entry = zscore < -entry_threshold and zscore[1] >= -entry_threshold and 
+             is_trading_hours and avoid_friday_trade and volatility_ok and
+             daily_drawdown < max_daily_drawdown and total_drawdown < max_total_drawdown
+
+short_entry = zscore > entry_threshold and zscore[1] <= entry_threshold and 
+              is_trading_hours and avoid_friday_trade and volatility_ok and
+              daily_drawdown < max_daily_drawdown and total_drawdown < max_total_drawdown
+
+// ============================================================================
+// EXIT CONDITIONS
+// ============================================================================
+// Multiple exit conditions for better risk management
+long_exit_zscore = zscore > -exit_threshold or zscore > exit_threshold
+short_exit_zscore = zscore < exit_threshold or zscore < -exit_threshold
+
+// Position management
+current_positions = strategy.position_size != 0 ? 1 : 0
+
+// ============================================================================
+// STRATEGY EXECUTION
+// ============================================================================
+
+// Entry Logic with enhanced risk management
+if long_entry and current_positions < max_positions
+    stop_level = close * (1 - stop_loss_pct / 100)
+    take_profit_level = close * (1 + take_profit_pct / 100)
+    strategy.entry("Long", strategy.long, qty=position_size_pct)
+    strategy.exit("Long Exit", "Long", stop=stop_level, limit=take_profit_level)
+
+if short_entry and current_positions < max_positions
+    stop_level = close * (1 + stop_loss_pct / 100)
+    take_profit_level = close * (1 - take_profit_pct / 100)
+    strategy.entry("Short", strategy.short, qty=position_size_pct)
+    strategy.exit("Short Exit", "Short", stop=stop_level, limit=take_profit_level)
+
+// Exit Logic (Mean Reversion + Risk Management)
+if long_exit_zscore and strategy.position_size > 0
+    strategy.close("Long", comment="Mean Revert Exit")
+
+if short_exit_zscore and strategy.position_size < 0
+    strategy.close("Short", comment="Mean Revert Exit")
+
+// Emergency stop if drawdown limits exceeded
+if daily_drawdown >= max_daily_drawdown or total_drawdown >= max_total_drawdown
+    strategy.close_all(comment="Drawdown Limit Exceeded")
+
+// ============================================================================
+// VISUAL INDICATORS
+// ============================================================================
+// Entry signals
+plotshape(long_entry, title="Long Entry", location=location.belowbar, style=shape.triangleup, 
+          size=size.small, color=color.green)
+plotshape(short_entry, title="Short Entry", location=location.abovebar, style=shape.triangledown, 
+          size=size.small, color=color.red)
+
+// Drawdown warnings
+plotshape(daily_drawdown > max_daily_drawdown * 0.8, title="Daily Drawdown Warning", 
+          location=location.top, style=shape.diamond, size=size.tiny, color=color.orange)
+plotshape(total_drawdown > max_total_drawdown * 0.8, title="Total Drawdown Warning", 
+          location=location.top, style=shape.diamond, size=size.tiny, color=color.red)
+
+// ============================================================================
+// INFORMATION TABLE
+// ============================================================================
+if barstate.islast
+    var table info_table = table.new(position.top_right, 2, 8, bgcolor=color.white, border_width=1)
+    
+    table.cell(info_table, 0, 0, "Metric", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 0, "Value", text_color=color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 1, "Daily DD%", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 1, str.tostring(daily_drawdown, "#.##"), 
+               text_color=daily_drawdown > max_daily_drawdown * 0.8 ? color.red : color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 2, "Total DD%", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 2, str.tostring(total_drawdown, "#.##"), 
+               text_color=total_drawdown > max_total_drawdown * 0.8 ? color.red : color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 3, "Z-Score", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 3, str.tostring(zscore, "#.##"), 
+               text_color=math.abs(zscore) > entry_threshold ? color.orange : color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 4, "ATR", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 4, str.tostring(atr_value, "#.####"), text_color=color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 5, "Equity", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 5, str.tostring(strategy.equity, "#.##"), text_color=color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 6, "Profit%", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 6, str.tostring(profit_pct, "#.##"), 
+               text_color=profit_pct >= challenge_profit_target ? color.green : color.black, text_size=size.small)
+    
+    table.cell(info_table, 0, 7, "Positions", text_color=color.black, text_size=size.small)
+    table.cell(info_table, 1, 7, str.tostring(current_positions), text_color=color.black, text_size=size.small)
+
+// ============================================================================
+// ALERTS
+// ============================================================================
+alertcondition(long_entry, title="Long Entry Signal", message="Z-Score Long Entry: {{ticker}} at {{close}}")
+alertcondition(short_entry, title="Short Entry Signal", message="Z-Score Short Entry: {{ticker}} at {{close}}")
+alertcondition(daily_drawdown > max_daily_drawdown * 0.8, title="Daily Drawdown Warning", 
+               message="Daily drawdown approaching limit: {{plot_0}}%")
+alertcondition(total_drawdown > max_total_drawdown * 0.8, title="Total Drawdown Warning", 
+               message="Total drawdown approaching limit: {{plot_0}}%")
+alertcondition(profit_pct >= challenge_profit_target, title="Profit Target Reached", 
+               message="Challenge profit target achieved: {{plot_0}}%")
